@@ -1,0 +1,18 @@
+name: car
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: actool
+        run: |
+          mkdir -p out
+          xcrun actool Assets.xcassets --compile out --platform iphoneos \
+            --minimum-deployment-target 15.0 --app-icon AppIcon \
+            --output-partial-info-plist out/partial.plist
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assetscar
+          path: out/Assets.car
