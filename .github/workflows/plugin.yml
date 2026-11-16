@@ -1,0 +1,56 @@
+name: Private-input plugin build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      THEOS: ${{ github.workspace }}/theos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/checkout@v4
+        with:
+          repository: theos/theos
+          ref: 8167f59de02fd32cf45b16bfcb1330dfa5c9974c
+          path: theos
+          submodules: recursive
+      - name: Prepare tools
+        run: brew install make dpkg
+      - name: Decrypt input
+        env:
+          BUILD_PASS: ${{ secrets.PLUGIN_BUILD_PASS }}
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -in source.enc -out input.tar.gz -pass env:BUILD_PASS
+          tar -xzf input.tar.gz
+      - name: Build
+        run: |
+          mkdir -p dist
+          set -o pipefail
+          env -u MAKELEVEL gmake -C source/tweak package FINALPACKAGE=1 TARGET_CODESIGN= ADDITIONAL_LDFLAGS='-Wl,-headerpad_max_install_names -Wl,-no_adhoc_codesign' -j3 > dist/build.log 2>&1
+          BIN=$(find source/tweak/.theos -type f -name spotifyglass.dylib | head -1)
+          test -s "$BIN"
+          cp "$BIN" dist/spotifyglass.dylib
+          xcrun install_name_tool -id @rpath/spotifyglass.dylib dist/spotifyglass.dylib
+          codesign -s - --force dist/spotifyglass.dylib
+          xcrun otool -L dist/spotifyglass.dylib > dist/dependencies.txt
+          shasum -a 256 dist/spotifyglass.dylib > dist/SHA256SUMS
+      - name: Encrypt output
+        if: always()
+        env:
+          BUILD_PASS: ${{ secrets.PLUGIN_BUILD_PASS }}
+        run: |
+          mkdir -p dist
+          tar -czf output.tar.gz dist
+          openssl enc -aes-256-cbc -salt -pbkdf2 -in output.tar.gz -out output.enc -pass env:BUILD_PASS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: encrypted-plugin-output
+          path: output.enc
+          retention-days: 3
