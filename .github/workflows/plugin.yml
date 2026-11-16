@@ -32,7 +32,10 @@ jobs:
         run: |
           mkdir -p dist
           set -o pipefail
-          env -u MAKELEVEL gmake -C source/tweak package FINALPACKAGE=1 TARGET_CODESIGN= ADDITIONAL_LDFLAGS='-Wl,-headerpad_max_install_names -Wl,-no_adhoc_codesign' -j3 > dist/build.log 2>&1
+          if ! env -u MAKELEVEL gmake -C source/tweak package FINALPACKAGE=1 TARGET_CODESIGN= ADDITIONAL_LDFLAGS='-Wl,-headerpad_max_install_names -Wl,-no_adhoc_codesign' -j3 > dist/build.log 2>&1; then
+            cat dist/build.log
+            exit 1
+          fi
           BIN=$(find source/tweak/.theos -type f -name spotifyglass.dylib | head -1)
           test -s "$BIN"
           cp "$BIN" dist/spotifyglass.dylib
