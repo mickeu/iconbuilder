@@ -86,8 +86,22 @@ struct SGLyricsLiveActivity: Widget {
                         .foregroundStyle(green)
                 }
             } minimal: {
-                Image(systemName: "music.note")
-                    .foregroundStyle(green)
+                if let end = context.state.timerEnd, end > Date() {
+                    Text(timerInterval: Date()...end, countsDown: true)
+                        .monospacedDigit()
+                        .foregroundStyle(green)
+                } else if context.state.view == .lyrics, !context.state.line.isEmpty {
+                    Text(context.state.line)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(green)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .truncationMode(.tail)
+                        .direction(of: context.state.line)
+                } else {
+                    Image(systemName: "music.note")
+                        .foregroundStyle(green)
+                }
             }
             .widgetURL(URL(string: "spotify:"))
         }
