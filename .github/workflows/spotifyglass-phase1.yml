@@ -1,0 +1,29 @@
+name: SpotifyGlass Phase 1 Extension
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Build only Live Activity extension
+        run: |
+          cd phase1-src
+          chmod +x scripts/build-extension.sh
+          mkdir -p out
+          cp extension/LiveActivity/Info.plist out/host-info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.spotify.client' out/host-info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 9.2.0' out/host-info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 920002054' out/host-info.plist
+          scripts/build-extension.sh out/host-info.plist out/extension
+          shasum -a 256 out/extension/SpotifyGlassLiveActivity.appex/SpotifyGlassLiveActivity > out/extension/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SpotifyGlass-phase1-extension
+          path: phase1-src/out/extension/
