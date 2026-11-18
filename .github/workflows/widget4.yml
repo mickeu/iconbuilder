@@ -1,0 +1,59 @@
+name: Widget4 build
+# Builds the Phase4 widget extension and tweak out of the private source repository on a macOS runner,
+# which the private repository cannot get (its macOS minutes are spent); the public one can.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      THEOS: ${{ github.workspace }}/theos
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          repository: mickeu/spotify-plugin-build
+          ref: phase4
+          token: ${{ secrets.SRC_TOKEN }}
+          path: src
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Theos
+        uses: actions/checkout@v4
+        with:
+          repository: theos/theos
+          ref: 8167f59de02fd32cf45b16bfcb1330dfa5c9974c
+          path: theos
+          submodules: recursive
+
+      - name: Tools
+        run: brew install make dpkg ldid
+
+      - name: Build widget extension
+        run: |
+          mkdir -p dist/extension
+          set -o pipefail
+          bash src/scripts/build-widget-extension.sh src/vendor/widget-extension dist/extension 2>&1 | tee dist/extension.log
+          test -s dist/extension/WidgetExtension.appex/WidgetExtension
+
+      - name: Build tweak
+        run: |
+          set -o pipefail
+          env -u MAKELEVEL gmake -C src/tweak package FINALPACKAGE=1 -j3 TARGET_CODESIGN= \
+            ADDITIONAL_LDFLAGS='-Wl,-headerpad_max_install_names -Wl,-no_adhoc_codesign' 2>&1 | tee dist/tweak.log
+          test -s "$(ls -t src/tweak/packages/*.deb | head -1)"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: widget4
+          path: |
+            dist/extension/WidgetExtension.appex
+            src/tweak/packages/*.deb
+            dist/*.log
+          if-no-files-found: warn
