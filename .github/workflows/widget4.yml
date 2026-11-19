@@ -34,6 +34,13 @@ jobs:
       - name: Tools
         run: brew install make dpkg ldid
 
+      - name: Swift interfaces
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          echo "SDK: $SDK"
+          ls "$SDK/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/" || true
+          ls "$SDK/System/Library/Frameworks/SwiftUI.framework/Modules/SwiftUI.swiftmodule/" || true
+
       - name: Build widget extension
         run: |
           mkdir -p dist/extension
