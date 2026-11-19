@@ -30,6 +30,7 @@ jobs:
             extension/WidgetExtension/*.swift \
             tweak/Sources/Shared/LiveActivity/LyricsActivityState.swift \
             tweak/Sources/Shared/LiveActivity/LiveActivityShared.swift \
+            tweak/Sources/Shared/LiveActivity/DynamicLyricsHost.swift \
             2>&1 | tee typecheck.log
           exit ${PIPESTATUS[0]}
       - name: Report typecheck errors
