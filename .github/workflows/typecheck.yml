@@ -22,7 +22,10 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          swiftc -typecheck -target arm64-apple-ios16.2 -sdk "$SDK" \
+          TARGET=$(sed -n 's/.*-target \(arm64-apple-ios[0-9.]*\).*/\1/p' scripts/build-widget-extension.sh | head -1)
+            TARGET=${TARGET:-arm64-apple-ios26.0}
+            echo "typechecking for $TARGET"
+            swiftc -typecheck -target "$TARGET" -sdk "$SDK" \
             -module-name WidgetExtension \
             extension/WidgetExtension/*.swift \
             tweak/Sources/Shared/LiveActivity/LyricsActivityState.swift \
