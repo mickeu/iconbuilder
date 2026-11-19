@@ -1,0 +1,23 @@
+name: typecheck
+on: workflow_dispatch
+jobs:
+  typecheck:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: mickeu/spotify-plugin-build
+          ref: phase4
+          token: ${{ secrets.SRC_TOKEN }}
+      - name: swiftc -typecheck
+        run: |
+          set -x
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          swiftc -typecheck -target arm64-apple-ios16.2 -sdk "$SDK" \
+            -module-name WidgetExtension \
+            extension/WidgetExtension/*.swift \
+            tweak/Sources/Shared/LiveActivity/LyricsActivityState.swift \
+            tweak/Sources/Shared/LiveActivity/LiveActivityShared.swift \
+            tweak/Sources/Shared/LiveActivity/DynamicLyricsHost.swift 2>&1 | tee typecheck.log
