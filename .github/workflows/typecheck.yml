@@ -1,5 +1,11 @@
 name: typecheck
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Private repository ref"
+        required: false
+        default: phase4
 jobs:
   typecheck:
     runs-on: macos-15
@@ -7,10 +13,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: mickeu/spotify-plugin-build
-          ref: phase4
+          ref: ${{ inputs.ref || 'phase4' }}
           token: ${{ secrets.SRC_TOKEN }}
       - name: swiftc -typecheck
         run: |
+          set -euo pipefail
           set -x
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
@@ -20,4 +27,11 @@ jobs:
             extension/WidgetExtension/*.swift \
             tweak/Sources/Shared/LiveActivity/LyricsActivityState.swift \
             tweak/Sources/Shared/LiveActivity/LiveActivityShared.swift \
-            tweak/Sources/Shared/LiveActivity/DynamicLyricsHost.swift 2>&1 | tee typecheck.log
+            2>&1 | tee typecheck.log
+          exit ${PIPESTATUS[0]}
+      - name: Report typecheck errors
+        if: failure()
+        run: |
+          if [ -f typecheck.log ]; then
+            while IFS= read -r line; do echo "::error::$line"; done < <(head -n 80 typecheck.log)
+          fi
