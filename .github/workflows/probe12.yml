@@ -1,0 +1,32 @@
+name: probe12
+
+# Builds the step-1 probe as a plain dylib for the jailbroken phone (iOS 16.2, arm64).
+# Purely diagnostic: no app is packaged, nothing is signed for install.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the dylib
+        run: |
+          set -e
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          mkdir -p out
+          xcrun --sdk iphoneos swiftc \
+            -target arm64-apple-ios16.2 \
+            -sdk "$SDK" \
+            -emit-library -o out/sg12probe.dylib \
+            -framework Foundation -framework UIKit -framework ActivityKit \
+            tweak/Sources/Shared/LiveActivity/SG12Probe.swift
+          ldid -S out/sg12probe.dylib || true
+          ls -l out
+          shasum -a 256 out/sg12probe.dylib
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe12
+          path: out/
