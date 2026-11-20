@@ -1,7 +1,5 @@
 name: probe12
 
-# Builds the step-1 probe as a plain dylib for the jailbroken phone (iOS 16.2, arm64).
-# Purely diagnostic: no app is packaged, nothing is signed for install.
 on:
   workflow_dispatch:
 
@@ -10,6 +8,11 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: mickeu/spotify-plugin-build
+          ref: phase4
+          token: ${{ secrets.SRC_TOKEN }}
+          path: src
 
       - name: Build the dylib
         run: |
@@ -21,7 +24,8 @@ jobs:
             -sdk "$SDK" \
             -emit-library -o out/sg12probe.dylib \
             -framework Foundation -framework UIKit -framework ActivityKit \
-            tweak/Sources/Shared/LiveActivity/SG12Probe.swift
+            src/tweak/Sources/Shared/LiveActivity/SG12Probe.swift \
+            src/tweak/Sources/Shared/LiveActivity/SG12Bootstrap.m
           ldid -S out/sg12probe.dylib || true
           ls -l out
           shasum -a 256 out/sg12probe.dylib
